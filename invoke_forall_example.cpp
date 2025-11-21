@@ -30,19 +30,19 @@ namespace {
         }
     };
 
-    constexpr auto test1() {
-        // return invoke_forall(
-        //     std::tuple{getter<2>{}, getter<0>{}},
-        //     protect_arg(std::tuple{10, 20.5, "hello"})
-        // );
-    }
+    // constexpr auto test1() {
+    //     return invoke_forall(
+    //         std::tuple{getter<2>{}, getter<0>{}},
+    //         protect_arg(std::tuple{10, 20.5, "hello"})
+    //     );
+    // }
 } // anonymous namespace
 
 int main() {
-    // // no tuple-like arguments: simple invoke
-    // auto res1 = invoke_forall(std::plus<int>{}, 2, 3);
-    // // It writes out "res1 = 5\n".
-    // std::cout << "res1 = " << res1 << '\n';
+    // no tuple-like arguments: simple invoke
+    auto res1 = invoke_forall(std::plus<int>{}, 2, 3);
+    // It writes out "res1 = 5\n".
+    std::cout << "res1 = " << res1 << '\n';
 
     // // tuple-like arguments: two arrays of same arity
     // std::array<int, 3> A = {1, 2, 3};
@@ -63,13 +63,13 @@ int main() {
     //     std::cout << ' ' << x;
     // std::cout << '\n';
 
-    // // tuple-like heterogeneous arguments
-    // std::tuple<int, double, std::string> T1 = {1, 2.5, std::string("abc")};
-    // auto res4 = invoke_forall([](auto a){ return a; }, T1);
-    // // It writes out "res4 = 1 2.5 abc\n".
-    // std::cout << "res4 = "
-    //           << get<0>(res4) << " " << get<1>(res4) << " " << get<2>(res4)
-    //           << '\n';
+    // tuple-like heterogeneous arguments
+    std::tuple<int, double, std::string> T1 = {1, 2.5, std::string("abc")};
+    auto res4 = invoke_forall([](auto a){ return a; }, T1);
+    // It writes out "res4 = 1 2.5 abc\n".
+    std::cout << "res4 = "
+              << get<0>(res4) << " " << get<1>(res4) << " " << get<2>(res4)
+              << '\n';
 
     // // It writes out "sum1 = 6\n".
     // std::cout << "sum1 = "
