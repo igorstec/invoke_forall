@@ -8,6 +8,15 @@
 #include <utility>
 
 namespace detail {
+
+    template <typename T>
+    struct bare_type {
+        using type = std::remove_cvref_t<T>;
+    };
+
+    template <typename T>
+    using bare_type_t = typename bare_type<T>::type;
+
     template<typename... Args>
     concept notEmpty = (sizeof...(Args) > 0);
 
@@ -23,7 +32,7 @@ namespace detail {
 
     // T nie wspiera operacji get<Index>.
     template<class T, std::size_t Index>
-    struct isIndexGettable<T, Index, std::void_t<decltype(std::get<Index>(std::declval<T>()))>> : std::true_type {};
+    struct isIndexGettable<T, Index, std::void_t<decltype(std::get<Index>(std::declval<bare_type_t<T>>()))>> : std::true_type {};
 
 
     template<typename T, T... ints>
@@ -44,12 +53,13 @@ namespace detail {
         auto indexes = std::make_index_sequence<arity>();
         return allIndexesGettable(indexes);
     }
-}
+} // namespace detail
 
-template<typename... Args> requires detail::notEmpty<Args...>
+template<detail::notEmpty... Args>
 constexpr auto invoke_forall(Args&&... args) {
     // Wystarczy, żeby chociaż jeden był wyciągalny
     // constexpr bool allArgsGettable = (... && detail::isGettable(args));
+    //constexpr bool hasGettableArgs = (... || detail::isGettable(args));
 
     return std::invoke(args...);
 }
