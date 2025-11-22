@@ -32,7 +32,7 @@ namespace detail {
 
     // T nie wspiera operacji get<Index>.
     template<class T, std::size_t Index>
-    struct isIndexGettable<T, Index, std::void_t<decltype(std::get<Index>(std::declval<bare_type_t<T>>()))>> : std::true_type {};
+    struct isIndexGettable<T, Index, std::void_t<decltype(std::get<Index>(std::declval<T>()))>> : std::true_type {};
 
 
     template<typename T, T... ints>
@@ -45,14 +45,33 @@ namespace detail {
     }
 
     template<typename T>
-    constexpr bool isGettable(T t) {
-        if (!isTupleLike<T>::value)
+    constexpr bool isGettable(T) {
+        if (!isTupleLike<bare_type_t<T>>::value)
             return false;
 
         static constexpr std::size_t arity = std::tuple_size_v<T>;
         auto indexes = std::make_index_sequence<arity>();
         return allIndexesGettable(indexes);
     }
+
+    // Sprawdzanie arity i gettability
+
+    // Weż arity ze wszystkich gettable argumentów - muszą mieć tę samą arity
+    template <typename T>
+    constexpr std::size_t get_gettable_arity() {
+        if constexpr (isGettable<T>) {
+            return std::tuple_size_v<bare_type_t<T>>;
+        }
+        return 0;
+    }
+
+    template <typename... Args>
+    constexpr std::size_t compute_arity() {
+        std::size_t result = 0;
+        ((result = get_gettable_arity<Args>() != 0 ? get_gettable_arity<Args>() : result), ...);
+        return result;
+    }
+
 } // namespace detail
 
 template<detail::notEmpty... Args>
@@ -60,8 +79,16 @@ constexpr auto invoke_forall(Args&&... args) {
     // Wystarczy, żeby chociaż jeden był wyciągalny
     // constexpr bool allArgsGettable = (... && detail::isGettable(args));
     //constexpr bool hasGettableArgs = (... || detail::isGettable(args));
+    if constexpr ((... || detail::isGettable(args))) {
+        // Tutaj implementacja dla przypadku, gdy przynajmniej jeden argument jest wyciągalny
+        // Na razie zostawiamy puste
 
-    return std::invoke(args...);
+
+
+    } else {
+        // Przypadek, gdy żaden argument nie jest wyciągalny
+        return std::invoke(std::forward<Args>(args)...);
+    }
 }
 
 #endif
