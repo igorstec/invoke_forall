@@ -30,6 +30,11 @@ namespace detail {
     template<class T>
     struct isTupleLike<T, std::void_t<decltype(std::tuple_size_v<T>)>> : std::true_type {};
 
+    template<typename T>
+    concept Protected = requires (T t){
+        t.get_protected_value();
+    };
+
 
     // =============================================================================
     // Sprawdzenie Gettable i Arity
@@ -79,14 +84,48 @@ namespace detail {
         return result;
     }
 
+    // ==============================================================================
+    // template <typename T> constexpr typ protect_arg(T&&) wykonuje konstruktor na tym
+    // ==============================================================================
+
+    // Opakowuje argument, aby zapobiec jego rozbiciu przez std::invoke.
+    // Używane do przekazywania argumentów krotkowych jako pojedynczych argumentów.
+    template <typename T>
+    class ProtectedArg {
+    private:
+        T&& value_;
+    public:
+        explicit ProtectedArg(T&& value) : value_(std::forward<T>(value)) {}
+
+        T&& get_protected_value() const {
+            return (std::forward<T>(value_));
+        }
+
+    };
+
     // =============================================================================
     // Typy odpowiedzi i funckcje pomocnicze do ich okreslenia
     // =============================================================================
 
-    //template <std::size_t I, typename T>
-    //constexpr decltype(auto) extract_for_invoke(T && arg)
-    // zwraca dla nongettable pp typ arg a
-    // dla gettable pp std::get<I>(arg)
+    template <std::size_t I, typename T>
+    /* zwraca dla nongettable pp typ arg a
+     dla gettable pp std::get<I>(arg)
+     a dla protected get_protected value*/
+    constexpr decltype(auto) extract_for_invoke(T && arg) {
+        if constexpr (isGettable<T>) {
+            // Gettable argument: extract element at index I
+            return std::get<I>(std::forward<T>(arg));
+        }
+        if constexpr (Protected<T>) {
+            // Protected argument: use the wrapped value directly, not indexed
+            return arg.get_protected_value();
+        } else {
+            // Regular argument: use as-is
+            return std::forward<T>(arg);
+        }
+
+    }
+
 
     template < std::size_t I, typename... Args>
     using invoke_result_at_i = std::invoke_result_t<
@@ -110,19 +149,7 @@ namespace detail {
 
 
 
-    // ==============================================================================
-    // template <typename T> constexpr typ protect_arg(T&&) wykonuje konstruktor na tym
-    // ==============================================================================
 
-    // Opakowuje argument, aby zapobiec jego rozbiciu przez std::invoke.
-    // Używane do przekazywania argumentów krotkowych jako pojedynczych argumentów.
-    template <typename T>
-    class ProtectedArg {
-    private:
-        T value_;
-    public:
-        //TODO konstruktory, get_protected_value
-    };
 
 
 } // namespace detail
