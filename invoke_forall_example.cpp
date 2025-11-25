@@ -6,29 +6,29 @@
 #include <tuple>
 
 namespace {
-    int sum1(const std::array<int, 3> &t) {
-        int res = 0;
-        for (int x : t)
-            res += x;
-        return res;
-    }
-
-    int sum2(std::array<int, 3> &t, int d) {
-        int res = 0;
-        for (int &x : t) {
-            x -= d;
-            res += x;
-        }
-        return res;
-    }
-
-    template <std::size_t I>
-    struct getter {
-        template <typename T>
-        constexpr decltype(auto) operator()(T &&t) const {
-            return get<I>(std::forward<T>(t));
-        }
-    };
+    // int sum1(const std::array<int, 3> &t) {
+    //     int res = 0;
+    //     for (int x : t)
+    //         res += x;
+    //     return res;
+    // }
+    //
+    // int sum2(std::array<int, 3> &t, int d) {
+    //     int res = 0;
+    //     for (int &x : t) {
+    //         x -= d;
+    //         res += x;
+    //     }
+    //     return res;
+    // }
+    //
+    // template <std::size_t I>
+    // struct getter {
+    //     template <typename T>
+    //     constexpr decltype(auto) operator()(T &&t) const {
+    //         return get<I>(std::forward<T>(t));
+    //     }
+    // };
 
     // constexpr auto test1() {
     //     return invoke_forall(
@@ -45,11 +45,11 @@ int main() {
     std::cout << "res1 = " << res1 << '\n';
 
     // // tuple-like arguments: two arrays of same arity
-    // std::array<int, 3> A = {1, 2, 3};
-    // std::array<int, 3> B = {10, 20, 30};
-    // auto res2 = invoke_forall(std::plus<int>{}, A, B);
+    //std::array<int, 3> A = {1, 2, 3};
+    //std::array<int, 3> B = {10, 20, 30};
+    //auto res2 = invoke_forall(std::plus<int>{}, A, B);
     // // It writes out "res2 = 11 22 33\n".
-    // std::cout << "res2 =";
+    std::cout << "res2 =";
     // for (auto const &x : res2)
     //     std::cout << ' ' << x;
     // std::cout << '\n';
@@ -64,12 +64,12 @@ int main() {
     // std::cout << '\n';
 
     // tuple-like heterogeneous arguments
-    std::tuple<int, double, std::string> T1 = {1, 2.5, std::string("abc")};
-    auto res4 = invoke_forall([](auto a){ return a; }, T1);
-    // It writes out "res4 = 1 2.5 abc\n".
-    std::cout << "res4 = "
-              << get<0>(res4) << " " << get<1>(res4) << " " << get<2>(res4)
-              << '\n';
+    // std::tuple<int, double, std::string> T1 = {1, 2.5, std::string("abc")};
+    // auto res4 = invoke_forall([](auto a){ return a; }, T1);
+    // // It writes out "res4 = 1 2.5 abc\n".
+    // std::cout << "res4 = "
+    //           << get<0>(res4) << " " << get<1>(res4) << " " << get<2>(res4)
+    //           << '\n';
 
     // // It writes out "sum1 = 6\n".
     // std::cout << "sum1 = "
