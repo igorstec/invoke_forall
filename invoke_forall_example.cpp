@@ -44,7 +44,7 @@ int main() {
     // It writes out "res1 = 5\n".
     std::cout << "res1 = " << res1 << '\n';
 
-    // // tuple-like arguments: two arrays of same arity
+    // tuple-like arguments: two arrays of same arity
     std::array<int, 3> A = {1, 2, 3};
     std::array<int, 3> B = {10, 20, 30};
     auto res2 = invoke_forall(std::plus<int>{}, A, B);
@@ -54,7 +54,7 @@ int main() {
         std::cout << ' ' << x;
     std::cout << '\n';
 
-    // // mixed arguments: call f(scalar, tuple)
+    // mixed arguments: call f(scalar, tuple)
     std::array<int, 3> C = {4, 5, 6};
     auto res3 = invoke_forall([](int s, int t){ return s * t; }, 10, C);
     // It writes out "res3 = 40 50 60\n".
@@ -71,18 +71,18 @@ int main() {
               << get<0>(res4) << " " << get<1>(res4) << " " << get<2>(res4)
               << '\n';
 
-    // // It writes out "sum1 = 6\n".
+    // It writes out "sum1 = 6\n".
     std::cout << "sum1 = "
               << invoke_forall(sum1, protect_arg(std::array{1, 2, 3}))
               << '\n';
 
-    // // It writes out "sum2 = 12 6 -3\n".
+    // It writes out "sum2 = 12 6 -3\n".
     std::cout << "sum2 =";
     for (int x : invoke_forall(sum2, protect_arg(C), A))
         std::cout << ' ' << x;
     std::cout << '\n';
 
-    // // It writes out "sum3 = -3\n".
+    // It writes out "sum3 = -3\n".
     std::cout << "sum3 = "
               << invoke_forall(sum1, protect_arg(C))
               << '\n';
@@ -97,7 +97,7 @@ int main() {
         std::cout << ' ' << x;
     std::cout << '\n';
 
-    // // code evaluated at compile time
+    // code evaluated at compile time
     static_assert(91 == invoke_forall(std::multiplies<int>{}, 7, 13));
     constexpr auto t = test1();
     static_assert(std::get<0>(t) == std::string("hello"));

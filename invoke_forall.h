@@ -24,7 +24,7 @@ namespace detail {
     concept not_empty = (sizeof...(Args) > 0);
 
     template<class T>
-    constexpr bool is_tuple_like = requires { std::tuple_size_v<T>; };
+    constexpr bool is_tuple_like = requires { std::tuple_size<T> };
 
     template<typename T>
     concept Protected = requires (T t){
@@ -50,7 +50,7 @@ namespace detail {
         *  w przeciwnym wypadku zwraca false.
         */
         return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
-            return (... && is_index_gettable<std::size_t, Indexes>);
+            return (... && is_index_gettable<Bare, Indexes>);
         }(std::make_index_sequence<std::tuple_size_v<Bare>>());
     }
 
@@ -149,7 +149,7 @@ constexpr auto protect_arg(T&& arg) {
 
 template<detail::not_empty... Args>
 constexpr decltype(auto) invoke_forall(Args&&... args) {
-    if constexpr ((... || detail::isGettable(args))) {
+    if constexpr ((... || detail::isGettable<Args>(args))) {
 
         // Tutaj implementacja dla przypadku, gdy przynajmniej jeden argument jest wyciągalny
         constexpr std::size_t arity = detail::compute_arity<Args...>();
