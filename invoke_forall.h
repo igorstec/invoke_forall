@@ -200,7 +200,7 @@ constexpr decltype(auto) invoke_forall(Args&&... args) {
          }
     } else {
         // Przypadek, gdy żaden argument nie jest wyciągalny
-        return std::invoke(std::forward<Args>(args)...);
+        return std::invoke(detail::extract_for_invoke<0>(std::forward<Args>(args))...);
     }
 }
 
