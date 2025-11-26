@@ -1,6 +1,7 @@
 #ifndef INVOKE_FORALL_H
 #define INVOKE_FORALL_H
 
+#include <array>
 #include <cstddef>
 #include <tuple>
 #include <functional>
@@ -31,7 +32,7 @@ namespace detail {
     struct is_tuple_like<T, std::void_t<decltype(std::tuple_size<T>::value)>> : std::true_type {};
 
     template<typename T>
-    constexpr bool is_tuple_like_v = is_tuple_like<bare_type_t<T>>::value;
+    constexpr bool is_tuple_like_v = is_tuple_like<T>::value;
 
     template<typename T>
     concept Protected = requires (T t){
@@ -46,26 +47,26 @@ namespace detail {
     constexpr bool is_index_gettable = requires { std::get<Index>(std::declval<T>()); };
 
     template<typename T>
-    constexpr bool isGettable() {
+    constexpr bool is_gettable() {
         using Bare = bare_type_t<T>; // T bez cv i referencji
+        if constexpr (is_tuple_like_v<Bare>) {
+            /*
+            *  Jeśli wszyskie indexy są gettable, zwraca true,
+            *  w przeciwnym wypadku zwraca false.
+            */
+            constexpr std::size_t N = std::tuple_size_v<Bare>;
+            return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
+                return (... && is_index_gettable<Bare, Indexes>);
+            }(std::make_index_sequence<N>());
+        }
 
-        if constexpr (!is_tuple_like_v<T>)
-            return false;
-
-        /*
-        *  Jeśli wszyskie indexy są gettable, zwraca true,
-        *  w przeciwnym wypadku zwraca false.
-        */
-        constexpr std::size_t N = std::tuple_size_v<Bare>;
-        return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
-            return (... && is_index_gettable<Bare, Indexes>);
-        }(std::make_index_sequence<N>());
+        return false;
     };
 
     // Weż arity ze wszystkich gettable argumentów - muszą mieć tę samą arity
     template <typename T>
     constexpr std::size_t get_gettable_arity() {
-        if constexpr (isGettable<T>()) {
+        if constexpr (is_gettable<T>()) {
             return std::tuple_size_v<bare_type_t<T>>;
         }
         return 0;
@@ -105,7 +106,7 @@ namespace detail {
      dla gettable pp std::get<I>(arg)
      a dla protected get_protected value*/
     constexpr decltype(auto) extract_for_invoke(T && arg) {
-        if constexpr (isGettable<T>()) {
+        if constexpr (is_gettable<T>()) {
             // Gettable argument: extract element at index I
             return std::get<I>(std::forward<T>(arg));
         }
@@ -157,7 +158,7 @@ constexpr auto protect_arg(T&& arg) {
 
 template<detail::not_empty... Args>
 constexpr decltype(auto) invoke_forall(Args&&... args) {
-    if constexpr ((... || detail::isGettable<Args>())) {
+    if constexpr ((... || detail::is_gettable<Args>())) {
 
         // Tutaj implementacja dla przypadku, gdy przynajmniej jeden argument jest wyciągalny
         constexpr std::size_t arity = detail::compute_arity<Args...>();
