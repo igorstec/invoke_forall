@@ -32,8 +32,6 @@ namespace detail {
         // a jej składowa value musi być używalna jak size_t
         { std::tuple_size<bare_type_t<T>>::value } -> std::convertible_to<std::size_t>;
      };
-    // template<typename T>
-    // constexpr bool is_tuple_like_v = is_tuple_like<bare_type_t<T>>::value;
 
     template<typename T>
     concept Protected = requires (T t){
@@ -65,8 +63,6 @@ namespace detail {
             }(std::make_index_sequence<N>());
         }
     };
-
-
 
     // Weż arity ze wszystkich gettable argumentów - muszą mieć tę samą arity
     template <typename T>
@@ -139,36 +135,42 @@ namespace detail {
         }(std::make_index_sequence<Arity>{});
     }
 
-    // template <std::size_t I, typename... Args>
-    // using invoke_result_at_i = std::invoke_result_t<
-    //     decltype(extract_for_invoke<I>(std::declval<Args>()))...
-    // >;
+    template <std::size_t Arity, typename... Args>
+    constexpr auto make_array_of_results(Args&&... args) {
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            auto call_one = [&](auto ic) {
+                constexpr std::size_t I = decltype(ic)::value;
+                return std::invoke(
+                    extract_for_invoke<I>(std::forward<Args>(args))...
+                );
+            };
+            return std::array{
+                call_one(std::integral_constant<std::size_t, Is>{})...
+            };
+        }(std::make_index_sequence<Arity>{});
+    }
+
+    template <std::size_t I, typename Func, typename... Args>
+        using invoke_result_at_i =
+        std::invoke_result_t<
+            Func,
+            decltype(extract_for_invoke<I>(std::declval<Args>()))...
+        >;
 
 
+    template <std::size_t Arity, typename Func, typename... Args>
+    constexpr bool all_results_same_type() {
+        if constexpr (Arity == 0) {
+            return true;
+        }else {
+            using first_result = invoke_result_at_i<0, Func, Args...>;
 
-    // template <std::size_t Arity, typename... Args>
-    // constexpr bool all_results_same_type() {
-    //     if constexpr (Arity == 0) {
-    //         return true;
-    //     }else {
-    //         using first_result = invoke_result_at_i<0, Args...>;
-    //
-    //         // Compares all with first_result.
-    //         return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
-    //             return (... && std::is_same_v<first_result, invoke_result_at_i<Indexes, Args...>>);
-    //         }(std::make_index_sequence<Arity>());
-    //     }
-    // }
-
-    // func: zrob tuple odpowiedz
-    // func: zrob array odpowiedz
-    // co jak wszytskie to void??? nwm
-
-
-
-
-
-
+            // Compares all with first_result.
+            return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
+                return (... && std::is_same_v<first_result, invoke_result_at_i<Indexes, Func, Args...>>);
+            }(std::make_index_sequence<Arity>());
+        }
+    }
 } // namespace detail
 
 // ============================================================================
@@ -187,20 +189,15 @@ constexpr decltype(auto) invoke_forall(Args&&... args) {
         constexpr std::size_t arity = detail::compute_arity<Args...>();
 
         static_assert(arity > 0);
-         // if constexpr (arity==0){
-         //     // Brak wyciągalnych argumentów
-         //     // To chyba nie moze sie stać:
-         //     return std::invoke(std::forward<Args>(args)...);
-         // }
 
-
-         // if constexpr (detail::all_results_same_type< arity, Args...>()) {
-         //     // Wszystkie wyniki mają ten sam typ wiec bedzie Array od arrity oraz first_result
-         // }
-         // else {
-         //     // Wyniki mają różne typy wiec bedzie Tuple od arrity
-         // }
-       return detail::make_tuple_of_results<arity>(std::forward<Args>(args)...);
+         if constexpr (detail::all_results_same_type< arity, Args...>()) {
+             // Wszystkie wyniki mają ten sam typ wiec bedzie Array od arrity oraz first_result
+             return detail::make_array_of_results<arity>(std::forward<Args>(args)...);
+         }
+         else {
+             // Wyniki mają różne typy wiec bedzie Tuple od arrity
+             return detail::make_tuple_of_results<arity>(std::forward<Args>(args)...);
+         }
     } else {
         // Przypadek, gdy żaden argument nie jest wyciągalny
         return std::invoke(std::forward<Args>(args)...);
