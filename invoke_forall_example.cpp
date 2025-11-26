@@ -49,11 +49,12 @@ int main() {
     std::array<int, 3> B = {10, 20, 30};
     auto res2 = invoke_forall(std::plus<int>{}, A, B);
     // // // It writes out "res2 = 11 22 33\n".
-    std::cout << "res2 ="<<res2;
+    std::cout << "res2 = "<<get<0>(res2) << " " << get<1>(res2) << " " << get<2>(res2) << '\n';
+
     // for (auto const &x : res2)
     //     std::cout << ' ' << x;
-    std::cout << '\n';
-    //
+    // std::cout << '\n';
+    // //
     // // mixed arguments: call f(scalar, tuple)
     // std::array<int, 3> C = {4, 5, 6};
     // auto res3 = invoke_forall([](int s, int t){ return s * t; }, 10, C);

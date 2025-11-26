@@ -24,13 +24,6 @@ namespace detail {
     template<typename... Args>
     concept not_empty = (sizeof...(Args) > 0);
 
-    // T nie wspiera operacji tuple_size_v.
-    // template<typename T, typename = void>
-    // struct is_tuple_like : std::false_type {};
-    //
-    // template<typename T>
-    // struct is_tuple_like<T, std::void_t<decltype(std::tuple_size<T>::value)>> : std::true_type {};
-
     template<typename T>
     concept isTupleLikeConcept =
      requires {
@@ -114,40 +107,57 @@ namespace detail {
     // Typy odpowiedzi i funckcje pomocnicze do ich okreslenia
     // =============================================================================
 
-    // template <std::size_t I, typename T>
+    template <std::size_t I, typename T>
     // /* zwraca dla nongettable pp typ arg a
     //  dla gettable pp std::get<I>(arg)
     //  a dla protected get_protected value*/
-    // constexpr decltype(auto) extract_for_invoke(T && arg) {
-    //     if constexpr (isGettable<T>()) {
-    //         // Gettable argument: extract element at index I
-    //         return std::get<I>(std::forward<T>(arg));
-    //     }
-    //     if constexpr (Protected<T>) {
-    //         // Protected argument: use the wrapped value directly, not indexed
-    //         return arg.get_protected_value();
-    //     } else {
-    //         // Regular argument: use as-is
-    //         return std::forward<T>(arg);
-    //     }
-    // }
+    constexpr decltype(auto) extract_for_invoke(T && arg) {
+        if constexpr (isGettable<T>()) {
+            // Gettable argument: extract element at index I
+            return std::get<I>(std::forward<T>(arg));
+        }else if constexpr (Protected<T>) {
+            // Protected argument: use the wrapped value directly, not indexed
+            return arg.get_protected_value();
+        } else {
+            // Regular argument: use as-is
+            return std::forward<T>(arg);
+        }
+    }
+
+    template <std::size_t Arity, typename... Args>
+    constexpr auto make_tuple_of_results(Args&&... args) {
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            auto call_one = [&](auto ic) {
+                constexpr std::size_t I = decltype(ic)::value;
+                return std::invoke(
+                    extract_for_invoke<I>(std::forward<Args>(args))...
+                );
+            };
+            return std::make_tuple(
+                call_one(std::integral_constant<std::size_t, Is>{})...
+            );
+        }(std::make_index_sequence<Arity>{});
+    }
 
     // template <std::size_t I, typename... Args>
     // using invoke_result_at_i = std::invoke_result_t<
     //     decltype(extract_for_invoke<I>(std::declval<Args>()))...
     // >;
 
+
+
     // template <std::size_t Arity, typename... Args>
     // constexpr bool all_results_same_type() {
     //     if constexpr (Arity == 0) {
     //         return true;
-    //     }
-    //     using first_result = invoke_result_at_i<0, Args...>;
+    //     }else {
+    //         using first_result = invoke_result_at_i<0, Args...>;
     //
-    //     // Compares all with first_result.
-    //     return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
-    //         return (... && std::is_same_v<first_result, invoke_result_at_i<Indexes, Args...>>);
-    //     }(std::make_index_sequence<Arity>());
+    //         // Compares all with first_result.
+    //         return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
+    //             return (... && std::is_same_v<first_result, invoke_result_at_i<Indexes, Args...>>);
+    //         }(std::make_index_sequence<Arity>());
+    //     }
     // }
 
     // func: zrob tuple odpowiedz
@@ -190,7 +200,7 @@ constexpr decltype(auto) invoke_forall(Args&&... args) {
          // else {
          //     // Wyniki mają różne typy wiec bedzie Tuple od arrity
          // }
-       return arity;
+       return detail::make_tuple_of_results<arity>(std::forward<Args>(args)...);
     } else {
         // Przypadek, gdy żaden argument nie jest wyciągalny
         return std::invoke(std::forward<Args>(args)...);
