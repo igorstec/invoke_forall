@@ -135,13 +135,20 @@ namespace detail {
         }(std::make_index_sequence<Arity>{});
     }
 
+    template <std::size_t I, typename Func, typename... Args>
+    using invoke_result_at_i =
+    std::invoke_result_t<
+        Func,
+        decltype(extract_for_invoke<I>(std::declval<Args>()))...
+    >;
+
     template <std::size_t Arity, typename... Args>
-    constexpr auto make_array_of_results(Args&&... args) {
+    constexpr auto make_array_of_results( Args&&... args) {
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             auto call_one = [&](auto ic) {
                 constexpr std::size_t I = decltype(ic)::value;
                 return std::invoke(
-                    extract_for_invoke<I>(std::forward<Args>(args))...
+                    extract_for_invoke<I>( std::forward<Args>(args))...
                 );
             };
             return std::array{
@@ -150,58 +157,67 @@ namespace detail {
         }(std::make_index_sequence<Arity>{});
     }
 
-    template <std::size_t I, typename Func, typename... Args>
-        using invoke_result_at_i =
-        std::invoke_result_t<
-            Func,
-            decltype(extract_for_invoke<I>(std::declval<Args>()))...
-        >;
-
-
     template <std::size_t Arity, typename Func, typename... Args>
-    constexpr bool all_results_same_type() {
+    constexpr std::optional<bool> all_results_same_type() {
         if constexpr (Arity == 0) {
             return true;
         }else {
             using first_result = invoke_result_at_i<0, Func, Args...>;
-
-            // Compares all with first_result.
-            return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
-                return (... && std::is_same_v<first_result, invoke_result_at_i<Indexes, Func, Args...>>);
-            }(std::make_index_sequence<Arity>());
+            if constexpr (std::is_void_v<first_result>) {
+                return std::nullopt;
+            }else{
+                // Compares all with first_result.
+                return [] <std::size_t... Indexes>(std::integer_sequence<std::size_t, Indexes...>) constexpr -> bool {
+                    return (... && std::is_same_v<first_result, invoke_result_at_i<Indexes, Func, Args...>>);
+                }(std::make_index_sequence<Arity>());
+            }
         }
+    }
+
+    template <std::size_t Arity, typename... Args>
+    constexpr void execute_void_invokes(Args&&... args) {
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            auto call_one = [&](auto ic) {
+                constexpr std::size_t I = decltype(ic)::value;
+                return std::invoke(
+                    extract_for_invoke<I>( std::forward<Args>(args))...
+                );
+            };
+            (call_one(std::integral_constant<std::size_t, Is>{}), ...);
+        }(std::make_index_sequence<Arity>{});
     }
 } // namespace detail
 
-// ============================================================================
-// To co wywoluje example
-template <typename T>
-constexpr auto protect_arg(T&& arg) {
-    return detail::ProtectedArg<T>(std::forward<T>(arg));
-}
-// ============================================================================
-
-template<detail::not_empty... Args>
-constexpr decltype(auto) invoke_forall(Args&&... args) {
-    if constexpr ((... || detail::isGettable<Args>())) {
-
-        // Tutaj implementacja dla przypadku, gdy przynajmniej jeden argument jest wyciągalny
-        constexpr std::size_t arity = detail::compute_arity<Args...>();
-
-        static_assert(arity > 0);
-
-         if constexpr (detail::all_results_same_type< arity, Args...>()) {
-             // Wszystkie wyniki mają ten sam typ wiec bedzie Array od arrity oraz first_result
-             return detail::make_array_of_results<arity>(std::forward<Args>(args)...);
-         }
-         else {
-             // Wyniki mają różne typy wiec bedzie Tuple od arrity
-             return detail::make_tuple_of_results<arity>(std::forward<Args>(args)...);
-         }
-    } else {
-        // Przypadek, gdy żaden argument nie jest wyciągalny
-        return std::invoke(detail::extract_for_invoke<0>(std::forward<Args>(args))...);
+    // ============================================================================
+    // To co wywoluje example
+    template <typename T>
+    constexpr auto protect_arg(T&& arg) {
+        return detail::ProtectedArg<T>(std::forward<T>(arg));
     }
-}
+    // ============================================================================
+
+    template<detail::not_empty... Args>
+    constexpr decltype(auto) invoke_forall(Args&&... args) {
+        if constexpr ((... || detail::isGettable<Args>())) {
+            // Tutaj implementacja dla przypadku, gdy przynajmniej jeden argument jest wyciągalny
+            constexpr std::size_t arity = detail::compute_arity<Args...>();
+
+            static_assert(arity > 0);
+            if constexpr(detail::all_results_same_type< arity, Args...>() == std::nullopt) {
+                // Wszystkie wyniki są void
+                detail::execute_void_invokes<arity>(std::forward<Args>(args)...);
+                return 1; // Zwraca jednostkową krotkę
+            } else if constexpr (detail::all_results_same_type< arity, Args...>() == true) {
+                // Wszystkie wyniki mają ten sam typ wiec bedzie Array od arrity oraz first_result
+                return detail::make_array_of_results<arity>(std::forward<Args>(args)...);
+            } else {
+                // Wyniki mają różne typy wiec bedzie Tuple od arrity
+                return detail::make_tuple_of_results<arity>(std::forward<Args>(args)...);
+            }
+        } else {
+            // Przypadek, gdy żaden argument nie jest wyciągalny / jest Protected
+            return std::invoke(detail::extract_for_invoke<0>(std::forward<Args>(args))...);
+        }
+    }
 
 #endif

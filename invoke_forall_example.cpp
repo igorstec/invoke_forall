@@ -89,15 +89,15 @@ int main() {
     //void return type test
     //auto z = std::get<0>(invoke_forall([](int &x){ x += 5; }, A));
     //The behavior of the above line is undefined – it may not compile.
-    //invoke_forall([](int &x){ x += 5; }, A);
+    invoke_forall([](int &x){ x += 5; }, A);
     // It writes out "A = 6 7 8\n".
-    // std::cout << "A =";
-    // for (int x : A)
-    //     std::cout << ' ' << x;
-    // std::cout << '\n';
+    std::cout << "A =";
+    for (int x : A)
+        std::cout << ' ' << x;
+    std::cout << '\n';
 
     // code evaluated at compile time
-    //static_assert(91 == invoke_forall(std::multiplies<int>{}, 7, 13));
+    static_assert(91 == invoke_forall(std::multiplies<int>{}, 7, 13));
     //constexpr auto t = test1();
     //static_assert(std::get<0>(t) == std::string("hello"));
     //static_assert(std::get<1>(t) == 10);
