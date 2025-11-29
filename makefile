@@ -16,4 +16,4 @@ test: $(TARGET)
 	@cd tests && $(CC) $(CC_FLAGS) *.cpp && ./a.out
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) tests/a.out

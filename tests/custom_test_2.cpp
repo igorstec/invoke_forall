@@ -1,6 +1,5 @@
 #include "../invoke_forall.h"
 #include "tuple"
-#include <iostream>
 
 struct callable_1 {
     constexpr int operator()(int n) const {
