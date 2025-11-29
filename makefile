@@ -13,10 +13,7 @@ $(TARGET): invoke_forall_example.cpp
 # TODO
 test: $(TARGET)
 	./$(TARGET)
-	cd tests && $(CC) $(CC_FLAGS) *.cpp && ./a.out
-	# @./$(TARGET) > fruit_picking.out
-	# @cd testy && $(CC) $(CC_FLAGS) *.cpp && ./a.out
-	# @./test.sh
+	@cd tests && $(CC) $(CC_FLAGS) *.cpp && ./a.out
 
 clean:
 	rm -f $(TARGET)
