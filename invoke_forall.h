@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstddef>
+#include <optional>
 #include <tuple>
 #include <functional>
 #include <type_traits>
@@ -92,9 +93,9 @@ namespace detail {
     private:
         T&& value_;
     public:
-        explicit ProtectedArg(T&& value) : value_(std::forward<T>(value)) {}
+        constexpr explicit ProtectedArg(T&& value) : value_(std::forward<T>(value)) {}
 
-        T&& get_protected_value() const {
+        constexpr T&& get_protected_value() const {
             return (std::forward<T>(value_));
         }
     };

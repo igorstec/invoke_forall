@@ -5,7 +5,7 @@ DIR=$(shell pwd)
 
 .PHONY: clean all
 
-all: $(TARGET)
+all: $(TARGET) test
 
 $(TARGET): invoke_forall_example.cpp
 	$(CC) $(CC_FLAGS) $< -o $@
@@ -13,6 +13,7 @@ $(TARGET): invoke_forall_example.cpp
 # TODO
 test: $(TARGET)
 	./$(TARGET)
+	cd tests && $(CC) $(CC_FLAGS) *.cpp && ./a.out
 	# @./$(TARGET) > fruit_picking.out
 	# @cd testy && $(CC) $(CC_FLAGS) *.cpp && ./a.out
 	# @./test.sh

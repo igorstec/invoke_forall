@@ -30,12 +30,12 @@ namespace {
         }
     };
 
-    // constexpr auto test1() {
-    //     return invoke_forall(
-    //         std::tuple{getter<2>{}, getter<0>{}},
-    //         protect_arg(std::tuple{10, 20.5, "hello"})
-    //     );
-    // }
+    constexpr auto test1() {
+        return invoke_forall(
+            std::tuple{getter<2>{}, getter<0>{}},
+            protect_arg(std::tuple{10, 20.5, "hello"})
+        );
+    }
 } // anonymous namespace
 
 int main() {
@@ -72,7 +72,8 @@ int main() {
               << '\n';
 
     // It writes out "sum1 = 6\n".
-    std::cout << "sum1 = " << invoke_forall(sum1, protect_arg(std::array{1, 2, 3}))
+    std::cout << "sum1 = "
+              << invoke_forall(sum1, protect_arg(std::array{1, 2, 3}))
               << '\n';
 
     // It writes out "sum2 = 12 6 -3\n".
@@ -86,9 +87,9 @@ int main() {
               << invoke_forall(sum1, protect_arg(C))
               << '\n';
 
-    //void return type test
-    //auto z = std::get<0>(invoke_forall([](int &x){ x += 5; }, A));
-    //The behavior of the above line is undefined – it may not compile.
+    // void return type test
+    auto z = std::get<0>(invoke_forall([](int &x){ x += 5; }, A));
+    // The behavior of the above line is undefined – it may not compile.
     invoke_forall([](int &x){ x += 5; }, A);
     // It writes out "A = 6 7 8\n".
     std::cout << "A =";
@@ -98,7 +99,7 @@ int main() {
 
     // code evaluated at compile time
     static_assert(91 == invoke_forall(std::multiplies<int>{}, 7, 13));
-    //constexpr auto t = test1();
-    //static_assert(std::get<0>(t) == std::string("hello"));
-    //static_assert(std::get<1>(t) == 10);
+    constexpr auto t = test1();
+    static_assert(std::get<0>(t) == std::string("hello"));
+    static_assert(std::get<1>(t) == 10);
 }
