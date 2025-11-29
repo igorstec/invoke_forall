@@ -88,7 +88,7 @@ int main() {
               << '\n';
 
     // void return type test
-    auto z = std::get<0>(invoke_forall([](int &x){ x += 5; }, A));
+    // auto z = std::get<0>(invoke_forall([](int &x){ x += 5; }, A));
     // The behavior of the above line is undefined – it may not compile.
     invoke_forall([](int &x){ x += 5; }, A);
     // It writes out "A = 6 7 8\n".

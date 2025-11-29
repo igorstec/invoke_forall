@@ -162,7 +162,10 @@ namespace detail {
     constexpr std::optional<bool> all_results_same_type() {
         if constexpr (Arity == 0) {
             return true;
-        }else {
+        } else if constexpr (isTupleLikeConcept<Func>) {
+            // Przypadek, gdzie przekazano krotkę typów callable.
+            return false;
+        } else {
             using first_result = invoke_result_at_i<0, Func, Args...>;
             if constexpr (std::is_void_v<first_result>) {
                 return std::nullopt;
