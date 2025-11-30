@@ -47,32 +47,6 @@ void sprawdz(ciezki_obiekt &&o){
 void sprawdz(const ciezki_obiekt &o){
     assert(!o.czy_wyjete);
 }
-//
-// // 2. Specyficzne - tuple
-// template <typename... Ts>
-// void sprawdz(const std::tuple<Ts...>& t) {
-//     std::apply([](const auto&... elems) {
-//         (sprawdz(elems), ...);
-//     }, t);
-// }
-//
-// // 3. Specyficzne - array
-// template <typename T, std::size_t N>
-// void sprawdz(const std::array<T, N>& arr) {
-//     for (const auto& elem : arr) {
-//         sprawdz(elem);
-//     }
-// }
-//
-// // 4. Ogólne - inne ranges (wykluczając tuple i array)
-// template <std::ranges::range R>
-//     requires (!std::is_same_v<std::remove_cvref_t<R>, std::tuple<typename std::tuple_element<0, std::remove_cvref_t<R>>::type>> &&
-//               !requires { typename std::tuple_size<std::remove_cvref_t<R>>::type; })
-// void sprawdz(R&& r){
-//     for (auto &&o : r)
-//         assert(!o.czy_wyjete);
-// }
-
 
 
 int main() {
@@ -95,11 +69,15 @@ int main() {
     spr(0);
     sprawdz(invoke_forall(przesuwacz, protect_arg(move(a))));
     spr(0);
+//
+    sprawdz(invoke_forall(make_tuple(przesuwacz), make_tuple(move(a))));
+    spr(0);
 
-//    sprawdz(invoke_forall(make_tuple(przesuwacz, przesuwacz), make_tuple(move(a), move(b))));
-//    spr(0);
-//    sprawdz(invoke_forall(przesuwacz, make_tuple(move(a), move(b))));
-//    spr(0);
+//
+    sprawdz(invoke_forall(make_tuple(przesuwacz, przesuwacz), make_tuple(move(a), move(b))));
+    spr(0);
+    sprawdz(invoke_forall(przesuwacz, make_tuple(move(a), move(b))));
+    spr(0);
 //    sprawdz(invoke_forall(make_tuple(przesuwacz, przesuwacz), move(a)));
 //    // Tak.
 //    spr(1);
