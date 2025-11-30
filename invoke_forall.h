@@ -266,7 +266,7 @@ constexpr decltype(auto) invoke_forall(Args&&... args) {
                       std::nullopt) {
             // All invocations return void
             detail::execute_void_invokes<arity>(std::forward<Args>(args)...);
-            return 1;
+            return std::tuple<>{};
         } else if constexpr (
             detail::all_results_same_type<arity, Args...>() == true) {
             // All invocations return same type -> return array
