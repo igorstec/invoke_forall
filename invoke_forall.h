@@ -111,7 +111,7 @@ constexpr std::size_t compute_arity() {
 template <typename T>
 class protected_arg {
 private:
-    std::remove_reference_t<T> value_;
+    T value_;
 
 public:
     template <typename U>
@@ -123,7 +123,7 @@ public:
     }
 
     constexpr decltype(auto) get_protected_value() && {
-        return std::move(value_);
+        return std::forward<T>(value_);
     }
 
     constexpr decltype(auto) get_protected_value() const & {
@@ -335,17 +335,22 @@ constexpr std::optional<bool> all_results_same_type() {
 // Invocation Implementations
 // ============================================================================
 
+// Keeps l-value references, turns everything else into a plain value.
+template <typename R>
+using keep_lvalue_ref_t = std::conditional_t<std::is_lvalue_reference_v<R>, R,
+     std::remove_cvref_t<R>>;
+
 // Creates std::tuple with results from invoking across all indices
 template <std::size_t Arity, typename... Args>
 constexpr auto make_tuple_of_results(Args&&... args) {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        auto invoke_at = [&](auto index_ic) {
+        auto invoke_at = [&](auto index_ic) -> decltype(auto) {
             constexpr std::size_t I = decltype(index_ic)::value;
             return std::invoke(
                 extract_for_invoke<I>(std::forward<Args>(args))...
             );
         };
-        return std::make_tuple(
+        return std::tuple<keep_lvalue_ref_t<invoke_result_at_i<Is, Args...>>...>(
             invoke_at(std::integral_constant<std::size_t, Is>{})...
         );
     }(std::make_index_sequence<Arity>{});
@@ -356,7 +361,7 @@ constexpr auto make_tuple_of_results(Args&&... args) {
 template <std::size_t Arity, typename... Args>
 constexpr auto make_array_of_results(Args&&... args) {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        auto invoke_at = [&](auto index_ic) {
+        auto invoke_at = [&](auto index_ic) -> decltype(auto) {
             constexpr std::size_t I = decltype(index_ic)::value;
             return std::invoke(
                 extract_for_invoke<I>(std::forward<Args>(args))...
@@ -373,7 +378,7 @@ constexpr auto make_array_of_results(Args&&... args) {
             );
         }
         else {
-            return std::array<first_result, Arity>{
+            return std::array<std::remove_cvref_t<first_result>, Arity>{
                 invoke_at(std::integral_constant<std::size_t, Is>{})...
             };
         }
@@ -385,7 +390,7 @@ constexpr auto make_array_of_results(Args&&... args) {
 template <std::size_t Arity, typename... Args>
 constexpr void execute_void_invokes(Args&&... args) {
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        auto invoke_at = [&](auto index_ic) {
+        auto invoke_at = [&](auto index_ic) -> decltype(auto) {
             constexpr std::size_t I = decltype(index_ic)::value;
             return std::invoke(
                 extract_for_invoke<I>(std::forward<Args>(args))...
